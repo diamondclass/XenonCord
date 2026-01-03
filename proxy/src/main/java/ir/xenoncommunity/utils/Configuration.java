@@ -42,11 +42,22 @@ public class Configuration {
             @Cleanup final FileInputStream is = new FileInputStream(configFile);
             final ConfigData configData = new Yaml().loadAs(is, ConfigData.class);
 
-            // Translate colors for messages
             configData.getMessages().setCannot_execute_as_console(Message.translateColor(configData.getMessages().getCannot_execute_as_console()));
             configData.getMessages().setUnknown_option(Message.translateColor(configData.getMessages().getUnknown_option()));
             configData.getMessages().setReload_start(Message.translateColor(configData.getMessages().getReload_start()));
             configData.getMessages().setReload_complete(Message.translateColor(configData.getMessages().getReload_complete()));
+
+            if (configData.getModules().getCaptcha_module() != null) {
+                Captcha captcha = configData.getModules().getCaptcha_module();
+                if (captcha.getMessages() != null) {
+                    captcha.getMessages().setPre_verify(Message.translateColor(captcha.getMessages().getPre_verify()));
+                    captcha.getMessages().setPing_too_high(Message.translateColor(captcha.getMessages().getPing_too_high()));
+                    captcha.getMessages().setInstructions(Message.translateColor(captcha.getMessages().getInstructions()));
+                    captcha.getMessages().setSuccess(Message.translateColor(captcha.getMessages().getSuccess()));
+                    captcha.getMessages().setInvalid_code(Message.translateColor(captcha.getMessages().getInvalid_code()));
+                    captcha.getMessages().setToo_many_attempts(Message.translateColor(captcha.getMessages().getToo_many_attempts()));
+                }
+            }
 
             logger.info("Successfully Initialized!");
 
@@ -109,6 +120,7 @@ public class Configuration {
         private BrandModule brand_module;
         private AntiProxyModule anti_proxy_module;
         private AccountLimit account_limit_module;
+        private Captcha captcha_module;
     }
 
     @Getter
@@ -147,5 +159,27 @@ public class Configuration {
         private boolean enabled;
         private int max_accounts;
         private String kick_message;
+    }
+
+    @Getter
+    @Setter
+    public static class Captcha {
+        private boolean enabled;
+        private int verification_duration;
+        private int pre_verify_duration;
+        private int max_ping;
+        private int difficulty;
+        private CaptchaMessages messages;
+    }
+
+    @Getter
+    @Setter
+    public static class CaptchaMessages {
+        private String pre_verify;
+        private String ping_too_high;
+        private String instructions;
+        private String success;
+        private String invalid_code;
+        private String too_many_attempts;
     }
 }

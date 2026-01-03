@@ -95,3 +95,22 @@ modules:
     enabled: true
     max_accounts: 3
     kick_message: "&b&lXenonCord &cYou have reached the maximum accounts per IP limit (%limit%)."
+
+  # CAPTCHA SYSTEM
+  captcha_module:
+    enabled: true
+    # Duration in hours players remain verified (e.g., 24)
+    verification_duration: 24
+    # Duration in seconds for pre-verification (ping check)
+    pre_verify_duration: 5
+    # Maximum allowed ping during pre-verification
+    max_ping: 1000
+    # Image noise level (1-5)
+    difficulty: 3
+    messages:
+      pre_verify: "&b&lXenonCord &fVerifying connection... Please wait &b%time%s&f."
+      ping_too_high: "&b&lXenonCord &cYour ping is too high (&b%ping%ms&c). Maximum allowed: &b%max%ms&c."
+      instructions: "&b&lXenonCord &fType the code you see on the map to verify you are human."
+      success: "&b&lXenonCord &aVerification successfully completed!"
+      invalid_code: "&b&lXenonCord &cIncorrect code. You have &b%attempts% &cattempts left."
+      too_many_attempts: "&b&lXenonCord &cYou have failed too many times. Try again later."

@@ -141,6 +141,9 @@ public abstract class AbstractPacketHandler {
     public void handle(FinishConfiguration finishConfiguration) throws Exception {
     }
 
+    public void handle(MapData mapData) throws Exception {
+    }
+
     public void handle(Transfer transfer) throws Exception {
     }
 
@@ -168,20 +171,20 @@ public abstract class AbstractPacketHandler {
 
     public void handle(net.md_5.bungee.protocol.packet.ClientChatAcknowledgement clientChatAcknowledgement) {
     }
+
     // Waterfall end
-    public void handle(ShowDialog showDialog) throws Exception
-    {
+    public void handle(ShowDialog showDialog) throws Exception {
     }
-    public void handle(ClearDialog clearDialog) throws Exception
-    {
+
+    public void handle(ClearDialog clearDialog) throws Exception {
     }
-    public void handle(CustomClickAction customClickAction) throws Exception
-    {
+
+    public void handle(CustomClickAction customClickAction) throws Exception {
     }
-    public void handle(BundleDelimiter bundleDelimiter) throws Exception
-    {
+
+    public void handle(BundleDelimiter bundleDelimiter) throws Exception {
     }
-    public void handle(ShowDialogDirect showDialogDirect) throws Exception
-    {
+
+    public void handle(ShowDialogDirect showDialogDirect) throws Exception {
     }
 }
