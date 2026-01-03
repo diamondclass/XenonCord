@@ -38,7 +38,7 @@ public class AntiProxyModule extends ModuleBase {
     public void fetchProxies() {
         getLogger().info(Colorize.console("&bFetching proxies from config links...."));
         proxyList.clear();
-        for (String s : getConfig().getModules().getAnti_proxy_module().getProxy_links()) {
+        for (String s : getConfig().getModules().getAnti_proxy_module().getLinks()) {
             try {
                 final ArrayList<String> fetchList = HttpClient.get(new URL(s)).get();
                 for (String line : fetchList) {
