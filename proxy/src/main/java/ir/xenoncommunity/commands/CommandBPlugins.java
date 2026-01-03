@@ -23,7 +23,7 @@ public class CommandBPlugins extends Command {
     private final String doesntExistMessage = "&cPlugin doesn't exist!";
 
     public CommandBPlugins() {
-        super("BPlugins", "xenoncord.bplugins");
+        super("bplugins", "xenoncord.command.bplugins", "bpl");
     }
 
     @Override
@@ -36,8 +36,13 @@ public class CommandBPlugins extends Command {
             return;
         }
 
-        if (!sender.hasPermission("xenoncord.bplugins.toggle")) {
+        if (sender instanceof net.md_5.bungee.api.connection.ProxiedPlayer && !sender.hasPermission("xenoncord.bplugins.toggle")) {
             return;
+        }
+
+        if (args.length < 2) {
+             Message.send(sender, XenonCore.instance.getConfigData().getUnknown_option_message().replace("OPTIONS", "load <file>, unload <name>"), false);
+             return;
         }
 
         final File plFile = new File(String.format("plugins/%s", args[1]));
@@ -50,9 +55,15 @@ public class CommandBPlugins extends Command {
     }
 
     private void listPlugins(CommandSender sender, PluginManager manager) {
+        Collection<Plugin> plugins = manager.getPlugins();
         StringBuilder sb = new StringBuilder();
-        manager.getPlugins().forEach(plugin -> sb.append(plugin.getDescription().getName()).append(", "));
-        Message.send(sender, String.format("&b&lXenonCord &cPLUGINS: %s.", sb.length() > 0 ? sb.substring(0, sb.length() - 2) : "None"), false);
+        
+        for (Plugin plugin : plugins) {
+            sb.append("&a").append(plugin.getDescription().getName()).append("&7, ");
+        }
+        
+        String list = sb.length() > 0 ? sb.substring(0, sb.length() - 2) : "&cNone";
+        Message.send(sender, "&b&lXenonCord &7Plugins (" + plugins.size() + "): " + list, false);
     }
 
     private void handlePluginAction(String action, File plFile, CommandSender sender, PluginManager manager) {
