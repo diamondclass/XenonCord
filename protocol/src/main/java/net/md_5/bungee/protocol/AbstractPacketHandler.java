@@ -190,4 +190,10 @@ public abstract class AbstractPacketHandler {
 
     public void handle(PlayerPositionAndLook position) throws Exception {
     }
+
+    public void handle(SetSlot setSlot) throws Exception {
+    }
+
+    public void handle(WindowItems windowItems) throws Exception {
+    }
 }

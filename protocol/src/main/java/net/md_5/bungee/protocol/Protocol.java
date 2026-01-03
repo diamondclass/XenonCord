@@ -17,13 +17,14 @@ public enum Protocol {
         HANDSHAKE {
 
                 {
-                        TO_SERVER.registerPacket(Handshake.class,Handshake::new,map(ProtocolConstants.MINECRAFT_1_8,0x00));
+                        TO_SERVER.registerPacket(Handshake.class, Handshake::new,
+                                        map(ProtocolConstants.MINECRAFT_1_8, 0x00));
                 }
         },
         // 0
         GAME {
 
-        {
+                {
                         TO_CLIENT.registerPacket(
                                         BundleDelimiter.class,
                                         BundleDelimiter::new,
@@ -290,7 +291,7 @@ public enum Protocol {
                                         map(ProtocolConstants.MINECRAFT_1_20_5, 0x15),
                                         map(ProtocolConstants.MINECRAFT_1_21_2, 0x16),
                                         map(ProtocolConstants.MINECRAFT_1_21_5, 0x15),
-                                        map(ProtocolConstants.MINECRAFT_1_21_9, 0x17));
+                                        map(ProtocolConstants.MINECRAFT_1_21_9, 0x17),
                                         map(ProtocolConstants.MINECRAFT_1_20_2, 0x3E),
                                         map(ProtocolConstants.MINECRAFT_1_20_3, 0x40),
                                         map(ProtocolConstants.MINECRAFT_1_20_5, 0x42),
@@ -549,6 +550,7 @@ public enum Protocol {
                                         CookieRequest.class,
                                         CookieRequest::new,
                                         map(ProtocolConstants.MINECRAFT_1_20_5, 0x16),
+                                        map(ProtocolConstants.MINECRAFT_1_21_2, -1),
                                         map(ProtocolConstants.MINECRAFT_1_21_5, 0x15));
                         TO_CLIENT.registerPacket(
                                         MapData.class,
@@ -739,7 +741,7 @@ public enum Protocol {
         // 1
         STATUS {
 
-        {
+                {
                         TO_CLIENT.registerPacket(
                                         StatusResponse.class,
                                         StatusResponse::new,
@@ -762,7 +764,7 @@ public enum Protocol {
         // 2
         LOGIN {
 
-        {
+                {
                         TO_CLIENT.registerPacket(
                                         Kick.class,
                                         Kick::new,
@@ -817,7 +819,7 @@ public enum Protocol {
         // 3
         CONFIGURATION {
 
-        {
+                {
 
                         TO_CLIENT.registerPacket(
                                         CookieRequest.class,

@@ -3,6 +3,7 @@ package ir.xenoncommunity.module.impl.security;
 import ir.xenoncommunity.XenonCore;
 import ir.xenoncommunity.module.ModuleBase;
 import ir.xenoncommunity.annotations.ModuleInfo;
+import net.md_5.bungee.protocol.DefinedPacket;
 import net.md_5.bungee.protocol.packet.MapData;
 import ir.xenoncommunity.utils.Configuration;
 import ir.xenoncommunity.utils.MapPalette;
@@ -16,10 +17,13 @@ import net.md_5.bungee.api.plugin.Listener;
 import java.util.concurrent.ScheduledFuture;
 import net.md_5.bungee.event.EventHandler;
 import net.md_5.bungee.protocol.packet.Chat;
+import net.md_5.bungee.protocol.packet.ClientChat;
 import net.md_5.bungee.protocol.packet.KeepAlive;
 import net.md_5.bungee.protocol.packet.Login;
 import net.md_5.bungee.protocol.packet.PlayerPositionAndLook;
 import net.md_5.bungee.protocol.ProtocolConstants;
+import io.netty.channel.*;
+import java.lang.reflect.Method;
 
 import java.awt.*;
 import java.awt.image.BufferedImage;
@@ -35,6 +39,7 @@ public class CaptchaModule extends ModuleBase implements Listener {
     private final Map<UUID, CaptchaSession> sessions = new ConcurrentHashMap<>();
     private final Map<UUID, Long> verifiedPlayers = new ConcurrentHashMap<>();
     private final File verifiedFile = new File("verified_players.csv");
+    private static final ThreadLocal<Boolean> BYPASS = ThreadLocal.withInitial(() -> false);
 
     @Override
     public void onInit() {
@@ -45,38 +50,49 @@ public class CaptchaModule extends ModuleBase implements Listener {
         getTaskManager().repeatingTask(this::cleanupSessions, 1, 1, TimeUnit.MINUTES);
     }
 
-    @EventHandler
+    @EventHandler(priority = -128)
     public void onPostLogin(PostLoginEvent event) {
         ProxiedPlayer player = event.getPlayer();
         if (isVerified(player.getUniqueId())) return;
 
         sessions.put(player.getUniqueId(), new CaptchaSession(player));
-        startPreVerification(player);
+        injectNetty(player);
+        showCaptcha(player);
     }
 
-    @EventHandler
+    @EventHandler(priority = -128)
     public void onServerConnect(ServerConnectEvent event) {
         ProxiedPlayer player = event.getPlayer();
         CaptchaSession session = sessions.get(player.getUniqueId());
         
         if (session != null && !session.verified) {
+            System.out.println("[Captcha] Blocking connection for " + player.getName() + " in state " + session.state);
             event.setCancelled(true);
         }
     }
 
-    @EventHandler
+    @EventHandler(priority = -128)
     public void onChat(ChatEvent event) {
+        System.out.println("[Captcha] DEBUG: ChatEvent fired. Sender=" + event.getSender().getClass().getName() + ", Msg=" + event.getMessage());
+
         if (!(event.getSender() instanceof ProxiedPlayer)) return;
         ProxiedPlayer player = (ProxiedPlayer) event.getSender();
         CaptchaSession session = sessions.get(player.getUniqueId());
+        
+        System.out.println("[Captcha] Chat event: " + event.getMessage() + " | Session: " + (session != null) + " | State: " + (session != null ? session.state : "NULL"));
 
-        if (session != null && session.state == State.CAPTCHA) {
+        if (session != null) {
             event.setCancelled(true);
-            String message = event.getMessage().trim();
-            if (message.equalsIgnoreCase(session.code)) {
-                handleSuccess(player);
+            if (session.state == State.CAPTCHA) {
+                System.out.println("[Captcha] Intercepting chat: " + event.getMessage());
+                String message = event.getMessage().trim();
+                if (message.equalsIgnoreCase(session.code)) {
+                    handleSuccess(player);
+                } else {
+                    handleFailure(player);
+                }
             } else {
-                handleFailure(player);
+                player.sendMessage(ChatColor.RED + "Please wait... verifying connection.");
             }
         }
     }
@@ -93,40 +109,8 @@ public class CaptchaModule extends ModuleBase implements Listener {
         }
     }
 
-    private void startPreVerification(ProxiedPlayer player) {
-        CaptchaSession session = sessions.get(player.getUniqueId());
-        if (session == null) return;
-
-        session.state = State.PRE_VERIFY;
-        int duration = getConfig().getModules().getCaptcha_module().getPre_verify_duration();
-        
-        session.task = getTaskManager().repeatingTask(() -> {
-            if (player.isConnected()) {
-                player.unsafe().sendPacket(new KeepAlive(System.currentTimeMillis()));
-            }
-
-            if (session.elapsed >= duration) {
-                if (player.getPing() > getConfig().getModules().getCaptcha_module().getMax_ping()) {
-                    player.disconnect(ChatColor.translateAlternateColorCodes('&', 
-                        getConfig().getModules().getCaptcha_module().getMessages().getPing_too_high()
-                        .replace("%ping%", String.valueOf(player.getPing()))
-                        .replace("%max%", String.valueOf(getConfig().getModules().getCaptcha_module().getMax_ping()))));
-                    cleanupSession(player.getUniqueId());
-                    return;
-                }
-                session.task.cancel(true);
-                showCaptcha(player);
-                return;
-            }
-
-            session.elapsed++;
-            player.sendMessage(ChatColor.translateAlternateColorCodes('&', 
-                getConfig().getModules().getCaptcha_module().getMessages().getPre_verify()
-                .replace("%time%", String.valueOf(duration - session.elapsed))));
-        }, 0, 1, TimeUnit.SECONDS);
-    }
-
     private void showCaptcha(ProxiedPlayer player) {
+        System.out.println("[Captcha] DEBUG: Showing Captcha to " + player.getName());
         CaptchaSession session = sessions.get(player.getUniqueId());
         if (session == null) return;
 
@@ -137,28 +121,32 @@ public class CaptchaModule extends ModuleBase implements Listener {
         Login login = new Login();
         login.setEntityId(-1);
         login.setHardcore(false);
-        login.setGameMode((short) 1);
+        login.setGameMode((short) 2);
         login.setPreviousGameMode((short) -1);
-        login.setWorldNames(Collections.singleton("minecraft:overworld"));
+        login.setWorldNames(Collections.singleton("minecraft:the_nether"));
         
         int version = player.getPendingConnection().getVersion();
         if (version >= ProtocolConstants.MINECRAFT_1_16) {
-            login.setDimension("minecraft:overworld");
+            login.setDimension("minecraft:the_nether");
         } else {
-            login.setDimension(0);
+            login.setDimension(-1);
         }
 
-        login.setWorldName("minecraft:overworld");
+        login.setWorldName("minecraft:the_nether");
         login.setDifficulty((short) 1);
         login.setMaxPlayers(1);
         login.setLevelType("default");
         login.setViewDistance(2);
         login.setSimulationDistance(2);
         
-        player.unsafe().sendPacket(login);
+        BYPASS.set(true);
+        try {
+            player.unsafe().sendPacket(login);
+        } finally {
+            BYPASS.set(false);
+        }
 
-        // Send Position to prevent "Downloading terrain" hang
-        player.unsafe().sendPacket(new PlayerPositionAndLook(0, 64, 0, 0f, 0f, (byte) 0, 0, false));
+        sendPacket(player, new PlayerPositionAndLook(0, 64, 0, 0f, 0f, (byte) 0, 0, false));
 
         MapData map = new MapData();
         map.setMapId(0);
@@ -171,17 +159,127 @@ public class CaptchaModule extends ModuleBase implements Listener {
         map.setZ((byte) 0);
         map.setData(mapData);
 
-        player.unsafe().sendPacket(map);
+        sendPacket(player, map);
 
-        player.sendMessage(ChatColor.translateAlternateColorCodes('&', 
+        net.md_5.bungee.protocol.packet.Item item = new net.md_5.bungee.protocol.packet.Item();
+        
+        int mapId = 358;
+        if (version >= ProtocolConstants.MINECRAFT_1_13) {
+        }
+        item.setId(mapId);
+        item.setCount(1);
+        item.setData(0); 
+        
+        sendPacket(player, new net.md_5.bungee.protocol.packet.SetSlot(0, 36, item));
+        
+        sendMessage(player, ChatColor.translateAlternateColorCodes('&', 
             getConfig().getModules().getCaptcha_module().getMessages().getInstructions()));
 
-        // Start KeepAlive task for Captcha phase
         session.task = getTaskManager().repeatingTask(() -> {
             if (player.isConnected()) {
-                player.unsafe().sendPacket(new KeepAlive(System.currentTimeMillis()));
+                sendPacket(player, new KeepAlive(System.currentTimeMillis()));
             }
         }, 1, 1, TimeUnit.SECONDS);
+    }
+
+    private void sendMessage(ProxiedPlayer player, String message) {
+        BYPASS.set(true);
+        try {
+            player.sendMessage(message);
+        } finally {
+            BYPASS.set(false);
+        }
+    }
+
+    private void sendPacket(ProxiedPlayer player, DefinedPacket packet) {
+        BYPASS.set(true);
+        try {
+            player.unsafe().sendPacket(packet);
+        } finally {
+            BYPASS.set(false);
+        }
+    }
+
+    private void injectNetty(ProxiedPlayer player) {
+        try {
+            Method getChMethod = player.getClass().getDeclaredMethod("getCh");
+            getChMethod.setAccessible(true);
+            Object channelWrapper = getChMethod.invoke(player);
+            
+            Method getHandleMethod = channelWrapper.getClass().getDeclaredMethod("getHandle");
+            getHandleMethod.setAccessible(true);
+            Channel channel = (Channel) getHandleMethod.invoke(channelWrapper);
+            
+            channel.pipeline().addBefore("inbound-boss", "captcha-handler", new ChannelDuplexHandler() {
+                @Override
+                public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
+                    if (msg instanceof DefinedPacket) {
+                         System.out.println("[Captcha] DEBUG Netty In: Incoming " + msg.getClass().getName());
+                    }
+
+                    String chatText = null;
+                    if (msg instanceof Chat) {
+                        chatText = ((Chat) msg).getMessage();
+                    } else if (msg instanceof ClientChat) {
+                        chatText = ((ClientChat) msg).getMessage();
+                    } else {
+                        String className = msg.getClass().getSimpleName();
+                        if (className.equals("ChatCommand") || className.equals("PlayerChatCommand") || className.equals("ClientCommand")) {
+                             try {
+                                 Method m = msg.getClass().getDeclaredMethod("getMessage");
+                                 m.setAccessible(true);
+                                 chatText = (String) m.invoke(msg);
+                             } catch (Exception ignored) {}
+                        }
+                    }
+
+                    if (chatText != null) {
+                        CaptchaSession session = sessions.get(player.getUniqueId());
+                        if (session != null) {
+                            if (!chatText.startsWith("/")) {
+                                System.out.println("[Captcha] DEBUG Netty: Intercepted '" + chatText + "' from " + player.getName());
+                                final String message = chatText.trim();
+                                if (session.state == State.CAPTCHA) {
+                                    XenonCore.instance.getBungeeInstance().getScheduler().runAsync(null, () -> {
+                                        if (message.equalsIgnoreCase(session.code)) {
+                                            handleSuccess(player);
+                                        } else {
+                                            handleFailure(player);
+                                        }
+                                    });
+                                }
+                                return;
+                            } else {
+                                return;
+                            }
+                        }
+                    }
+                    super.channelRead(ctx, msg);
+                }
+
+                @Override
+                public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) throws Exception {
+                    if (BYPASS.get()) {
+                        super.write(ctx, msg, promise);
+                        return;
+                    }
+
+                    CaptchaSession session = sessions.get(player.getUniqueId());
+                    if (session != null && !session.verified) {
+                        String className = msg.getClass().getSimpleName();
+                        if (className.contains("Chat") || className.contains("Title") || 
+                            className.contains("PlayerList") || className.contains("BossBar")) {
+                            System.out.println("[Captcha] DEBUG Netty Out: Blocked " + className + " for " + player.getName());
+                            return;
+                        }
+                    }
+                    super.write(ctx, msg, promise);
+                }
+            });
+            System.out.println("[Captcha] DEBUG: Injected Netty handler for " + player.getName());
+        } catch (Exception e) {
+            System.err.println("[Captcha] Failed to inject Netty handler: " + e.getMessage());
+        }
     }
 
     private void handleSuccess(ProxiedPlayer player) {
@@ -189,7 +287,7 @@ public class CaptchaModule extends ModuleBase implements Listener {
         if (session == null) return;
 
         session.verified = true;
-        player.sendMessage(ChatColor.translateAlternateColorCodes('&', 
+        sendMessage(player, ChatColor.translateAlternateColorCodes('&', 
             getConfig().getModules().getCaptcha_module().getMessages().getSuccess()));
         
         long expiry = System.currentTimeMillis() + (TimeUnit.HOURS.toMillis(getConfig().getModules().getCaptcha_module().getVerification_duration()));
@@ -211,7 +309,7 @@ public class CaptchaModule extends ModuleBase implements Listener {
                 getConfig().getModules().getCaptcha_module().getMessages().getToo_many_attempts()));
             sessions.remove(player.getUniqueId());
         } else {
-            player.sendMessage(ChatColor.translateAlternateColorCodes('&', 
+            sendMessage(player, ChatColor.translateAlternateColorCodes('&', 
                 getConfig().getModules().getCaptcha_module().getMessages().getInvalid_code()
                 .replace("%attempts%", String.valueOf(3 - session.attempts))));
         }
@@ -308,7 +406,7 @@ public class CaptchaModule extends ModuleBase implements Listener {
     }
 
     private enum State {
-        PRE_VERIFY, CAPTCHA
+        CAPTCHA
     }
 
     private static class CaptchaSession {
