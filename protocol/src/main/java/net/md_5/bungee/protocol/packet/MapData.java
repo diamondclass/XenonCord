@@ -77,7 +77,7 @@ public class MapData extends DefinedPacket {
         writeVarInt(0, buf);
 
         buf.writeByte(columns);
-        if (columns > 0) {
+        if (columns != 0) {
             buf.writeByte(rows);
             buf.writeByte(x);
             buf.writeByte(z);

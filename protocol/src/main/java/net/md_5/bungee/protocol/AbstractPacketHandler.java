@@ -187,4 +187,7 @@ public abstract class AbstractPacketHandler {
 
     public void handle(ShowDialogDirect showDialogDirect) throws Exception {
     }
+
+    public void handle(PlayerPositionAndLook position) throws Exception {
+    }
 }

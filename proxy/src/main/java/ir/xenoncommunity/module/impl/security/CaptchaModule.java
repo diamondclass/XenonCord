@@ -16,7 +16,10 @@ import net.md_5.bungee.api.plugin.Listener;
 import java.util.concurrent.ScheduledFuture;
 import net.md_5.bungee.event.EventHandler;
 import net.md_5.bungee.protocol.packet.Chat;
+import net.md_5.bungee.protocol.packet.KeepAlive;
 import net.md_5.bungee.protocol.packet.Login;
+import net.md_5.bungee.protocol.packet.PlayerPositionAndLook;
+import net.md_5.bungee.protocol.ProtocolConstants;
 
 import java.awt.*;
 import java.awt.image.BufferedImage;
@@ -80,7 +83,14 @@ public class CaptchaModule extends ModuleBase implements Listener {
 
     @EventHandler
     public void onDisconnect(PlayerDisconnectEvent event) {
-        sessions.remove(event.getPlayer().getUniqueId());
+        cleanupSession(event.getPlayer().getUniqueId());
+    }
+
+    private void cleanupSession(UUID uuid) {
+        CaptchaSession session = sessions.remove(uuid);
+        if (session != null && session.task != null) {
+            session.task.cancel(true);
+        }
     }
 
     private void startPreVerification(ProxiedPlayer player) {
@@ -91,13 +101,17 @@ public class CaptchaModule extends ModuleBase implements Listener {
         int duration = getConfig().getModules().getCaptcha_module().getPre_verify_duration();
         
         session.task = getTaskManager().repeatingTask(() -> {
+            if (player.isConnected()) {
+                player.unsafe().sendPacket(new KeepAlive(System.currentTimeMillis()));
+            }
+
             if (session.elapsed >= duration) {
                 if (player.getPing() > getConfig().getModules().getCaptcha_module().getMax_ping()) {
                     player.disconnect(ChatColor.translateAlternateColorCodes('&', 
                         getConfig().getModules().getCaptcha_module().getMessages().getPing_too_high()
                         .replace("%ping%", String.valueOf(player.getPing()))
                         .replace("%max%", String.valueOf(getConfig().getModules().getCaptcha_module().getMax_ping()))));
-                    sessions.remove(player.getUniqueId());
+                    cleanupSession(player.getUniqueId());
                     return;
                 }
                 session.task.cancel(true);
@@ -126,14 +140,25 @@ public class CaptchaModule extends ModuleBase implements Listener {
         login.setGameMode((short) 1);
         login.setPreviousGameMode((short) -1);
         login.setWorldNames(Collections.singleton("minecraft:overworld"));
-        login.setDimension("minecraft:overworld");
+        
+        int version = player.getPendingConnection().getVersion();
+        if (version >= ProtocolConstants.MINECRAFT_1_16) {
+            login.setDimension("minecraft:overworld");
+        } else {
+            login.setDimension(0);
+        }
+
         login.setWorldName("minecraft:overworld");
         login.setDifficulty((short) 1);
         login.setMaxPlayers(1);
+        login.setLevelType("default");
         login.setViewDistance(2);
         login.setSimulationDistance(2);
         
         player.unsafe().sendPacket(login);
+
+        // Send Position to prevent "Downloading terrain" hang
+        player.unsafe().sendPacket(new PlayerPositionAndLook(0, 64, 0, 0f, 0f, (byte) 0, 0, false));
 
         MapData map = new MapData();
         map.setMapId(0);
@@ -150,6 +175,13 @@ public class CaptchaModule extends ModuleBase implements Listener {
 
         player.sendMessage(ChatColor.translateAlternateColorCodes('&', 
             getConfig().getModules().getCaptcha_module().getMessages().getInstructions()));
+
+        // Start KeepAlive task for Captcha phase
+        session.task = getTaskManager().repeatingTask(() -> {
+            if (player.isConnected()) {
+                player.unsafe().sendPacket(new KeepAlive(System.currentTimeMillis()));
+            }
+        }, 1, 1, TimeUnit.SECONDS);
     }
 
     private void handleSuccess(ProxiedPlayer player) {
@@ -164,7 +196,7 @@ public class CaptchaModule extends ModuleBase implements Listener {
         verifiedPlayers.put(player.getUniqueId(), expiry);
         saveVerifiedPlayer(player.getUniqueId(), expiry);
         
-        sessions.remove(player.getUniqueId());
+        cleanupSession(player.getUniqueId());
 
         player.connect(XenonCore.instance.getBungeeInstance().getServerInfo(player.getPendingConnection().getListener().getDefaultServer()));
     }
