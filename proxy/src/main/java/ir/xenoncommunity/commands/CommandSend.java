@@ -2,9 +2,11 @@ package ir.xenoncommunity.commands;
 
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableSet;
+import ir.xenoncommunity.utils.Language;
 import net.md_5.bungee.api.*;
 import net.md_5.bungee.api.chat.ComponentBuilder;
 import net.md_5.bungee.api.chat.HoverEvent;
+import net.md_5.bungee.api.chat.TextComponent;
 import net.md_5.bungee.api.config.ServerInfo;
 import net.md_5.bungee.api.connection.ProxiedPlayer;
 import net.md_5.bungee.api.event.ServerConnectEvent;

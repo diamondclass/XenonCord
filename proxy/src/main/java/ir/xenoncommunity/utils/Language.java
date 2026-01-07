@@ -31,7 +31,7 @@ public class Language {
                     file.createNewFile();
                 }
             } catch (IOException e) {
-                XenonCore.instance.getLogger().severe("Could not save language.yml: " + e.getMessage());
+                XenonCore.instance.getLogger().error("Could not save language.yml: " + e.getMessage());
             }
         }
 
@@ -39,7 +39,7 @@ public class Language {
             config = ConfigurationProvider.getProvider(YamlConfiguration.class).load(file);
             prefix = ChatColor.translateAlternateColorCodes('&', config.getString("prefix", "&b&lXenonCord &8» &7"));
         } catch (IOException e) {
-            XenonCore.instance.getLogger().severe("Could not load language.yml: " + e.getMessage());
+            XenonCore.instance.getLogger().error("Could not load language.yml: " + e.getMessage());
         }
     }
 
@@ -65,7 +65,7 @@ public class Language {
             config = ConfigurationProvider.getProvider(YamlConfiguration.class).load(file);
             prefix = ChatColor.translateAlternateColorCodes('&', config.getString("prefix", "&b&lXenonCord &8» &7"));
         } catch (IOException e) {
-            XenonCore.instance.getLogger().severe("Could not reload language.yml: " + e.getMessage());
+            XenonCore.instance.getLogger().error("Could not reload language.yml: " + e.getMessage());
         }
     }
 }

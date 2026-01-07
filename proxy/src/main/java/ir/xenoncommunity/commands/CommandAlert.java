@@ -1,5 +1,6 @@
 package ir.xenoncommunity.commands;
 
+import ir.xenoncommunity.utils.Language;
 import net.md_5.bungee.api.ChatColor;
 import net.md_5.bungee.api.CommandSender;
 import net.md_5.bungee.api.ProxyServer;

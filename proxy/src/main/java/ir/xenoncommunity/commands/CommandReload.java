@@ -1,8 +1,11 @@
 package ir.xenoncommunity.commands;
 
+import ir.xenoncommunity.XenonCore;
+import ir.xenoncommunity.utils.Language;
 import net.md_5.bungee.BungeeCord;
 import net.md_5.bungee.api.ChatColor;
 import net.md_5.bungee.api.CommandSender;
+import net.md_5.bungee.api.chat.TextComponent;
 import net.md_5.bungee.api.event.ProxyReloadEvent;
 import net.md_5.bungee.api.plugin.Command;
 

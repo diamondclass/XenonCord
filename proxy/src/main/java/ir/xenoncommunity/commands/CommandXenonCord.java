@@ -2,6 +2,7 @@ package ir.xenoncommunity.commands;
 
 import ir.xenoncommunity.XenonCore;
 import ir.xenoncommunity.module.impl.gui.GuiModule;
+import ir.xenoncommunity.utils.Language;
 import ir.xenoncommunity.utils.Message;
 import net.md_5.bungee.api.CommandSender;
 import net.md_5.bungee.api.plugin.Command;
