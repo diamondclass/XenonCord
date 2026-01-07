@@ -4,6 +4,7 @@ import ir.xenoncommunity.annotations.ModuleInfo;
 import ir.xenoncommunity.module.ModuleBase;
 import ir.xenoncommunity.utils.Colorize;
 import ir.xenoncommunity.utils.HttpClient;
+import ir.xenoncommunity.utils.WhitelistUtils;
 import lombok.Getter;
 import net.md_5.bungee.api.event.PlayerHandshakeEvent;
 import net.md_5.bungee.event.EventHandler;
@@ -58,6 +59,9 @@ public class AntiProxyModule extends ModuleBase {
 
     @EventHandler
     public void onHandshake(PlayerHandshakeEvent event) {
+        if (WhitelistUtils.isWhitelisted(event.getConnection().getAddress().getAddress().getHostAddress(), null))
+            return;
+        
         if (proxyList.contains(event.getConnection().getAddress().getAddress().getHostAddress()))
             event.setCancelled(true);
     }

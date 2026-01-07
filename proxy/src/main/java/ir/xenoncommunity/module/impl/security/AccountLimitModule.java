@@ -3,6 +3,7 @@ package ir.xenoncommunity.module.impl.security;
 import ir.xenoncommunity.annotations.ModuleInfo;
 import ir.xenoncommunity.module.ModuleBase;
 import ir.xenoncommunity.utils.Message;
+import ir.xenoncommunity.utils.WhitelistUtils;
 import net.md_5.bungee.api.chat.TextComponent;
 import net.md_5.bungee.api.connection.ProxiedPlayer;
 import net.md_5.bungee.api.event.PreLoginEvent;
@@ -28,6 +29,9 @@ public class AccountLimitModule extends ModuleBase {
 
         final InetSocketAddress address = (InetSocketAddress) event.getConnection().getSocketAddress();
         final InetAddress inetAddress = address.getAddress();
+
+        if (WhitelistUtils.isWhitelisted(inetAddress.getHostAddress(), event.getConnection().getName()))
+            return;
         
         int count = 0;
         final int limit = getConfig().getModules().getAccount_limit_module().getMax_accounts();

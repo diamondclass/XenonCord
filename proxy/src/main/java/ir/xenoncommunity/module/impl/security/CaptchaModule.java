@@ -7,6 +7,7 @@ import net.md_5.bungee.protocol.DefinedPacket;
 import net.md_5.bungee.protocol.packet.MapData;
 import ir.xenoncommunity.utils.Configuration;
 import ir.xenoncommunity.utils.MapPalette;
+import ir.xenoncommunity.utils.WhitelistUtils;
 import net.md_5.bungee.api.ChatColor;
 import net.md_5.bungee.api.connection.ProxiedPlayer;
 import net.md_5.bungee.api.event.ChatEvent;
@@ -52,6 +53,7 @@ public class CaptchaModule extends ModuleBase implements Listener {
     @EventHandler(priority = -64)
     public void onPostLogin(PostLoginEvent event) {
         ProxiedPlayer player = event.getPlayer();
+        if (WhitelistUtils.isWhitelisted(player.getAddress().getAddress().getHostAddress(), player.getName())) return;
         if (isVerified(player.getUniqueId())) return;
 
         sessions.put(player.getUniqueId(), new CaptchaSession(player));

@@ -5,6 +5,11 @@
 # General Proxy Settings
 general:
   debug: true
+  whitelist:
+    ips:
+      - "127.0.0.1"
+    users:
+      - "SyNdicateFoundation"
   
 # Command and System Messages
 messages:

@@ -92,6 +92,14 @@ public class Configuration {
     @Setter
     public static class General {
         private boolean debug;
+        private Whitelist whitelist;
+    }
+
+    @Getter
+    @Setter
+    public static class Whitelist {
+        private String[] ips;
+        private String[] users;
     }
 
     @Getter
