@@ -113,6 +113,11 @@ modules:
     max_ping: 1000
     # Image noise level (1-5)
     difficulty: 3
+    # Blacklist threshold (failures before blacklist)
+    blacklist_threshold: 5
+    # Blacklist duration in hours
+    blacklist_duration: 72
+    blacklist_message: "&b&lXenonCord &cYou have been blacklisted for failing the captcha too many times."
     messages:
       pre_verify: "&b&lXenonCord &fVerifying connection... Please wait &b%time%s&f."
       ping_too_high: "&b&lXenonCord &cYour ping is too high (&b%ping%ms&c). Maximum allowed: &b%max%ms&c."

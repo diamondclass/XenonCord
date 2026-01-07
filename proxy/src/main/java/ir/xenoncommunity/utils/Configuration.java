@@ -19,8 +19,8 @@ public class Configuration {
     private final Logger logger;
 
     public Configuration() {
-        this.bstatsFile = new File("bstats", "bstats.txt");
-        this.configFile = new File("XenonCord.yml");
+        this.bstatsFile = new File("XenonCord/bstats", "bstats.txt");
+        this.configFile = new File("XenonCord", "XenonCord.yml");
         this.logger = XenonCore.instance.getLogger();
     }
 
@@ -35,6 +35,9 @@ public class Configuration {
     public ConfigData init() {
         logger.info("Initializing Configuration...");
         try {
+            if (!configFile.getParentFile().exists()) {
+                configFile.getParentFile().mkdirs();
+            }
             if (!configFile.exists()) copyConfig();
 
             Thread.currentThread().setContextClassLoader(ConfigData.class.getClassLoader());
@@ -56,6 +59,7 @@ public class Configuration {
                     captcha.getMessages().setSuccess(Message.translateColor(captcha.getMessages().getSuccess()));
                     captcha.getMessages().setInvalid_code(Message.translateColor(captcha.getMessages().getInvalid_code()));
                     captcha.getMessages().setToo_many_attempts(Message.translateColor(captcha.getMessages().getToo_many_attempts()));
+                    captcha.setBlacklist_message(Message.translateColor(captcha.getBlacklist_message()));
                 }
             }
 
@@ -179,6 +183,9 @@ public class Configuration {
         private int pre_verify_duration;
         private int max_ping;
         private int difficulty;
+        private int blacklist_threshold;
+        private int blacklist_duration;
+        private String blacklist_message;
         private CaptchaMessages messages;
     }
 

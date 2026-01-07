@@ -39,7 +39,8 @@ public class CaptchaModule extends ModuleBase implements Listener {
 
     private final Map<UUID, CaptchaSession> sessions = new ConcurrentHashMap<>();
     private final Map<UUID, Long> verifiedPlayers = new ConcurrentHashMap<>();
-    private final File verifiedFile = new File("verified_players.csv");
+    private final File verifiedFile = new File("XenonCord/verified_players.csv");
+    private final File oldVerifiedFile = new File("verified_players.csv");
     private static final ThreadLocal<Boolean> BYPASS = ThreadLocal.withInitial(() -> false);
 
     @Override
@@ -291,14 +292,28 @@ public class CaptchaModule extends ModuleBase implements Listener {
         if (session == null) return;
 
         session.attempts++;
-        if (session.attempts >= 3) {
+        int maxAttempts = 3;
+        int blacklistThreshold = getConfig().getModules().getCaptcha_module().getBlacklist_threshold();
+        
+        if (session.attempts >= blacklistThreshold) {
+            if (BlacklistModule.instance != null) {
+                int duration = getConfig().getModules().getCaptcha_module().getBlacklist_duration();
+                BlacklistModule.instance.getBlacklistManager().add(player.getAddress().getAddress().getHostAddress(), duration);
+            }
+            player.disconnect(ChatColor.translateAlternateColorCodes('&', 
+                getConfig().getModules().getCaptcha_module().getBlacklist_message()));
+            sessions.remove(player.getUniqueId());
+            return;
+        }
+
+        if (session.attempts >= maxAttempts) {
             player.disconnect(ChatColor.translateAlternateColorCodes('&', 
                 getConfig().getModules().getCaptcha_module().getMessages().getToo_many_attempts()));
             sessions.remove(player.getUniqueId());
         } else {
             sendMessage(player, ChatColor.translateAlternateColorCodes('&', 
                 getConfig().getModules().getCaptcha_module().getMessages().getInvalid_code()
-                .replace("%attempts%", String.valueOf(3 - session.attempts))));
+                .replace("%attempts%", String.valueOf(maxAttempts - session.attempts))));
         }
     }
 
@@ -364,6 +379,26 @@ public class CaptchaModule extends ModuleBase implements Listener {
     }
 
     private void loadVerifiedPlayers() {
+        if (oldVerifiedFile.exists()) {
+            try (BufferedReader reader = new BufferedReader(new FileReader(oldVerifiedFile))) {
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    String[] parts = line.split(",");
+                    if (parts.length == 2) {
+                        try {
+                            // Migrate valid entries
+                            verifiedPlayers.put(UUID.fromString(parts[0]), Long.parseLong(parts[1]));
+                            saveVerifiedPlayer(UUID.fromString(parts[0]), Long.parseLong(parts[1]));
+                        } catch (Exception ignored) {}
+                    }
+                }
+                reader.close();
+                oldVerifiedFile.delete();
+            } catch (Exception e) {
+                XenonCore.instance.logdebugerror("Failed to migrate old verified players: " + e.getMessage());
+            }
+        }
+
         if (!verifiedFile.exists()) return;
         try (BufferedReader reader = new BufferedReader(new FileReader(verifiedFile))) {
             String line;
@@ -379,6 +414,9 @@ public class CaptchaModule extends ModuleBase implements Listener {
     }
 
     private void saveVerifiedPlayer(UUID uuid, long expiry) {
+        if (!verifiedFile.getParentFile().exists()) {
+            verifiedFile.getParentFile().mkdirs();
+        }
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(verifiedFile, true))) {
             writer.write(uuid.toString() + "," + expiry);
             writer.newLine();
