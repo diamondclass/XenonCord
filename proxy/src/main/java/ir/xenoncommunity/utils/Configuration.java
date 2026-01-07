@@ -86,6 +86,7 @@ public class Configuration {
         public String getReload_message() { return messages.getReload_start(); }
         public String getReload_complete_message() { return messages.getReload_complete(); }
         public String getUnknown_option_message() { return messages.getUnknown_option(); }
+        public String getGui_permission() { return permissions.getGui(); }
     }
 
     @Getter
@@ -118,6 +119,7 @@ public class Configuration {
         private String reload;
         private String bplugins;
         private String bplugins_toggle;
+        private String gui;
     }
 
     @Getter

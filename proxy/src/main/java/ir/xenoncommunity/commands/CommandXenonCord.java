@@ -1,6 +1,7 @@
 package ir.xenoncommunity.commands;
 
 import ir.xenoncommunity.XenonCore;
+import ir.xenoncommunity.module.impl.gui.GuiModule;
 import ir.xenoncommunity.utils.Message;
 import net.md_5.bungee.api.CommandSender;
 import net.md_5.bungee.api.plugin.Command;
@@ -29,6 +30,16 @@ public class CommandXenonCord extends Command {
                 Message.send(sender, XenonCore.instance.getConfigData().getReload_message(), true);
                 XenonCore.instance.setConfigData(XenonCore.instance.getConfiguration().init());
                 Message.send(sender, XenonCore.instance.getConfigData().getReload_complete_message(), true);
+                break;
+            case "gui":
+                if (!sender.hasPermission(XenonCore.instance.getConfigData().getGui_permission())) return;
+                GuiModule guiModule = GuiModule.instance;
+                
+                if (guiModule == null || !XenonCore.instance.getConfigData().getModules().getGui_module().isEnabled()) {
+                    Message.send(sender, "&b&lXenonCord &cGUI Module is disabled in config!", true);
+                    return;
+                }
+                guiModule.toggleGUI(sender);
                 break;
         }
     }

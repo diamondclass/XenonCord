@@ -24,6 +24,7 @@ permissions:
   reload: "xenoncord.xenoncord.reload"
   bplugins: "xenoncord.command.bplugins"
   bplugins_toggle: "xenoncord.bplugins.toggle"
+  gui: "xenoncord.command.gui"
 
 # =============================================================
 #                   Modules Settings
