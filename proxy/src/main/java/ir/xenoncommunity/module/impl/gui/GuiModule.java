@@ -13,6 +13,7 @@ import ir.xenoncommunity.annotations.ModuleInfo;
 import ir.xenoncommunity.module.ModuleBase;
 import ir.xenoncommunity.utils.Colorize;
 import ir.xenoncommunity.utils.Message;
+import ir.xenoncommunity.utils.Language;
 import net.md_5.bungee.api.CommandSender;
 
 import javax.swing.*;
@@ -62,8 +63,9 @@ public class GuiModule extends ModuleBase {
                 if (frame.isVisible()) {
                     frame.toFront();
                 }
+                }
             }
-            Message.send(sender, "&b&lXenonCord &7GUI has been &b" + (frame.isVisible() ? "opened" : "closed") + "&7.", true);
+            Message.send(sender, frame.isVisible() ? Language.get("gui_opened") : Language.get("gui_closed"), true);
         });
     }
 

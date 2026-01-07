@@ -20,7 +20,7 @@ public class CommandXenonCord extends Command {
 
     public void execute(CommandSender sender, String[] args) {
         if (args.length == 0) {
-            Message.send(sender, "&7This server is using &b&lXenonCord &7Version " + XenonCore.instance.getVersion() + " &r&7by &fRealStresser.&7\nPlease, report bugs on:\nhttps://github.com/SyNdicateFoundation/XenonCord", false);
+            Message.send(sender, Language.get("xenoncord_info").replace("%version%", XenonCore.instance.getVersion()), false);
             return;
         }
 
@@ -36,7 +36,7 @@ public class CommandXenonCord extends Command {
                 GuiModule guiModule = GuiModule.instance;
                 
                 if (guiModule == null || !XenonCore.instance.getConfigData().getModules().getGui_module().isEnabled()) {
-                    Message.send(sender, "&b&lXenonCord &cGUI Module is disabled in config!", true);
+                    Message.send(sender, Language.get("gui_disabled"), true);
                     return;
                 }
                 guiModule.toggleGUI(sender);

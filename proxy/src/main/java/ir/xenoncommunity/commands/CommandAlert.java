@@ -25,7 +25,7 @@ public class CommandAlert extends Command {
                 // Remove &h
                 args[0] = args[0].substring(2);
             } else {
-                builder.append(ProxyServer.getInstance().getTranslation("alert"));
+                builder.append(Language.get("alert").replace("%message%", ""));
             }
 
             for (String s : args) {
@@ -34,8 +34,13 @@ public class CommandAlert extends Command {
             }
 
             String message = builder.substring(0, builder.length() - 1);
+            if (args[0].toLowerCase(Locale.ROOT).startsWith("&h")) {
+                message = ChatColor.translateAlternateColorCodes('&', String.join(" ", args).substring(2));
+            } else {
+                message = Language.get("alert").replace("%message%", ChatColor.translateAlternateColorCodes('&', String.join(" ", args)));
+            }
 
-            ProxyServer.getInstance().broadcast(TextComponent.fromLegacy(message));
+            ProxyServer.getInstance().broadcast(TextComponent.fromLegacyText(message));
         }
     }
 }

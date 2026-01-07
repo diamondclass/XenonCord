@@ -14,13 +14,17 @@ public class CommandReload extends Command {
 
     @Override
     public void execute(CommandSender sender, String[] args) {
-        BungeeCord.getInstance().config.load();
-        BungeeCord.getInstance().reloadMessages();
-        BungeeCord.getInstance().stopListeners();
-        BungeeCord.getInstance().startListeners();
-        BungeeCord.getInstance().getPluginManager().callEvent(new ProxyReloadEvent(sender));
+        if (!sender.hasPermission(XenonCore.instance.getConfigData().getReload_permission())) {
+            sender.sendMessage(TextComponent.fromLegacyText(Language.get("no_permission")));
+            return;
+        }
 
-        sender.sendMessage(ChatColor.BOLD.toString() + ChatColor.RED + "Waterfall has been reloaded."
-                + " This is NOT advisable and you will not be supported with any issues that arise! Please restart Waterfall ASAP.");
+        long start = System.currentTimeMillis();
+        sender.sendMessage(TextComponent.fromLegacyText(XenonCore.instance.getConfigData().getReload_message()));
+        
+        XenonCore.instance.setConfigData(XenonCore.instance.getConfiguration().init());
+        Language.reload();
+        
+        sender.sendMessage(TextComponent.fromLegacyText(Language.get("reload_success")));
     }
 }
