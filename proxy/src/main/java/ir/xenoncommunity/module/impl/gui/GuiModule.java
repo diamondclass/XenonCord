@@ -63,7 +63,6 @@ public class GuiModule extends ModuleBase {
                 if (frame.isVisible()) {
                     frame.toFront();
                 }
-                }
             }
             Message.send(sender, frame.isVisible() ? Language.get("gui_opened") : Language.get("gui_closed"), true);
         });
