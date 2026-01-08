@@ -25,4 +25,4 @@ jobs:
         with:
           tag_name: ${{ steps.info.outputs.msg }}
           name: ${{ steps.info.outputs.msg }}
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.GH_TOKEN }}
