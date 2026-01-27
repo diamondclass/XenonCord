@@ -74,7 +74,7 @@ public class MapData extends DefinedPacket {
         if (protocolVersion >= ProtocolConstants.MINECRAFT_1_14) {
             buf.writeBoolean(locked);
         }
-        writeVarInt(0, buf);
+        writeVarInt(iconCount, buf);
 
         buf.writeByte(columns);
         if (columns != 0) {

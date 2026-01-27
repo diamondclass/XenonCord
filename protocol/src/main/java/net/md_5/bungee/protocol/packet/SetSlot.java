@@ -16,12 +16,22 @@ import net.md_5.bungee.protocol.ProtocolConstants;
 public class SetSlot extends DefinedPacket {
 
     private int windowId;
+    private int stateId;
     private int slot;
     private Item item;
+
+    public SetSlot(int windowId, int slot, Item item) {
+        this.windowId = windowId;
+        this.slot = slot;
+        this.item = item;
+    }
 
     @Override
     public void read(ByteBuf buf, ProtocolConstants.Direction direction, int protocolVersion) {
         windowId = buf.readUnsignedByte();
+        if (protocolVersion >= ProtocolConstants.MINECRAFT_1_17_1) {
+            stateId = readVarInt(buf);
+        }
         slot = buf.readShort();
         item = readItem(buf, protocolVersion);
     }
@@ -29,6 +39,9 @@ public class SetSlot extends DefinedPacket {
     @Override
     public void write(ByteBuf buf, ProtocolConstants.Direction direction, int protocolVersion) {
         buf.writeByte(windowId);
+        if (protocolVersion >= ProtocolConstants.MINECRAFT_1_17_1) {
+            writeVarInt(stateId, buf);
+        }
         buf.writeShort(slot);
         writeItem(item, buf, protocolVersion);
     }

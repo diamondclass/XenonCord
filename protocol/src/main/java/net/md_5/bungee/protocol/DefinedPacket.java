@@ -77,8 +77,22 @@ public abstract class DefinedPacket {
             if (!buf.readBoolean())
                 return null;
             item.setId(readVarInt(buf));
-            item.setCount(buf.readByte());
-            item.setTag(readTag(buf, protocolVersion));
+            if (protocolVersion >= ProtocolConstants.MINECRAFT_1_20_5) {
+                item.setCount(readVarInt(buf));
+                int added = readVarInt(buf);
+                int removed = readVarInt(buf);
+                // For now we don't support reading the actual component data
+                // as it requires a full registry of data types.
+                // If added or removed > 0, this will likely still desync,
+                // but 0 is very common for simple/proxy-generated items.
+                if (added > 0 || removed > 0) {
+                    // throw new BadPacketException("Cannot read items with components in 1.20.5+
+                    // yet");
+                }
+            } else {
+                item.setCount(buf.readByte());
+                item.setTag(readTag(buf, protocolVersion));
+            }
         }
         return item;
     }
@@ -103,11 +117,18 @@ public abstract class DefinedPacket {
             } else {
                 buf.writeBoolean(true);
                 writeVarInt(item.getId(), buf);
-                buf.writeByte(item.getCount());
-                if (item.getTag() == null) {
-                    buf.writeByte(0);
+                if (protocolVersion >= ProtocolConstants.MINECRAFT_1_20_5) {
+                    writeVarInt(item.getCount(), buf);
+                    // Components would be written here.
+                    writeVarInt(0, buf); // 0 additions
+                    writeVarInt(0, buf); // 0 removals
                 } else {
-                    writeTag(item.getTag(), buf, protocolVersion);
+                    buf.writeByte(item.getCount());
+                    if (item.getTag() == null) {
+                        buf.writeByte(0);
+                    } else {
+                        writeTag(item.getTag(), buf, protocolVersion);
+                    }
                 }
             }
         }
@@ -452,15 +473,22 @@ public abstract class DefinedPacket {
     }
 
     public static Tag readTag(ByteBuf input, int protocolVersion, NBTLimiter limiter) {
+        if (!input.isReadable()) {
+            return null;
+        }
+
+        // Peek the first byte to check if it's TAG_End (0)
+        byte type = input.getByte(input.readerIndex());
+        if (type == 0) {
+            input.skipBytes(1);
+            return null;
+        }
+
         DataInputStream in = new DataInputStream(new ByteBufInputStream(input));
         try {
             if (protocolVersion >= ProtocolConstants.MINECRAFT_1_20_2) {
-                final byte type = in.readByte();
-                if (type == 0) {
-                    return EndTag.INSTANCE;
-                } else {
-                    return Tag.readById(type, in, limiter);
-                }
+                in.readByte(); // Consumimos el byte que ya leímos con peek
+                return Tag.readById(type, in, limiter);
             }
             final NamedTag namedTag = new NamedTag();
             namedTag.read(in, limiter);
